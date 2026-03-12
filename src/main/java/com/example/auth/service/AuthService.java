@@ -8,6 +8,7 @@ import com.example.auth.repository.UserRepository;
 import com.example.auth.security.PasswordPolicyValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
 
@@ -25,21 +26,25 @@ public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
-     * Constructeur avec injection du repository utilisateur.
+     * Constructeur avec injection du repository et de l'encodeur de mot de passe.
      *
-     * @param userRepository le repository d'accès aux données utilisateur
+     * @param userRepository  le repository d'accès aux données utilisateur
+     * @param passwordEncoder l'encodeur BCrypt pour le hachage des mots de passe
      */
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
      * Inscrit un nouvel utilisateur après validation de la politique de mot de passe.
+     * Le mot de passe est haché avec BCrypt avant stockage.
      *
      * @param email    l'adresse email de l'utilisateur
-     * @param password le mot de passe en clair (sera haché au TP3)
+     * @param password le mot de passe en clair
      * @return l'utilisateur créé et sauvegardé
      * @throws InvalidInputException     si l'email est invalide ou le mot de passe ne respecte pas la politique
      * @throws ResourceConflictException si l'email existe déjà
@@ -56,7 +61,6 @@ public class AuthService {
             throw new InvalidInputException("Invalid email format");
         }
 
-        // Validation de la politique de mot de passe
         PasswordPolicyValidator.validate(password);
 
         if (userRepository.findByEmail(email).isPresent()) {
@@ -64,7 +68,9 @@ public class AuthService {
             throw new ResourceConflictException("Email already exists");
         }
 
-        User user = new User(email, password);
+        // Hachage du mot de passe avec BCrypt avant stockage
+        String hashedPassword = passwordEncoder.encode(password);
+        User user = new User(email, hashedPassword);
         userRepository.save(user);
         logger.info("Inscription réussie pour : {}", email);
         return user;
@@ -72,6 +78,7 @@ public class AuthService {
 
     /**
      * Authentifie un utilisateur et retourne un token.
+     * Vérifie le mot de passe avec BCrypt.
      *
      * @param email    l'adresse email de l'utilisateur
      * @param password le mot de passe en clair
@@ -85,7 +92,8 @@ public class AuthService {
                     return new AuthenticationFailedException("Email not found");
                 });
 
-        if (!user.getPasswordHash().equals(password)) {
+        // Vérification du mot de passe avec BCrypt
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             logger.warn("Connexion échouée : mauvais mot de passe pour {}", email);
             throw new AuthenticationFailedException("Invalid password");
         }
