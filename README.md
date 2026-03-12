@@ -1,9 +1,13 @@
-# Auth Server - TP1
+# Auth Server - TP2
 
 ## Description
-Serveur d'authentification réalisé dans le cadre du cours CDWFS - TP1.
-Première version volontairement non sécurisée pour comprendre les risques
-de sécurité. Les failles seront corrigées dans les TP 2, 3 et 4.
+Serveur d'authentification réalisé dans le cadre du TP2 CDWFS.
+Cette version améliore le TP1 en corrigeant les vulnérabilités majeures :
+hachage BCrypt, politique de mot de passe stricte, et anti brute force.
+
+Malgré ces améliorations, l'authentification reste fragile car le secret
+circule encore dans la phase de login et reste rejouable si une requête
+est capturée. Ce problème sera corrigé au TP3 avec un protocole anti-rejeu.
 
 Stack : Java 17, Spring Boot 3.x, MySQL, Maven
 
@@ -12,7 +16,7 @@ Stack : Java 17, Spring Boot 3.x, MySQL, Maven
 ## Prérequis
 - Java 17
 - Maven 3.9
-- MySQL (WAMP ou autre)
+- MySQL (WAMP)
 
 ---
 
@@ -20,17 +24,17 @@ Stack : Java 17, Spring Boot 3.x, MySQL, Maven
 
 1. Cloner le projet :
 ```bash
-git clone https://github.com/steavenspr/auth-server-tp1.git
+git clone https://github.com/steavenspr/auth-server-tp2.git
 ```
 
 2. Créer la base de données MySQL :
 ```sql
-CREATE DATABASE auth_db;
+CREATE DATABASE auth_db_tp2;
 ```
 
 3. Configurer `src/main/resources/application.properties` :
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/auth_db
+spring.datasource.url=jdbc:mysql://localhost:3306/auth_db_tp2
 spring.datasource.username=root
 spring.datasource.password=
 ```
@@ -40,51 +44,31 @@ spring.datasource.password=
 mvn spring-boot:run
 ```
 
-5. L'API est accessible sur : http://localhost:8080
+---
 
-La table `users` est créée automatiquement par Hibernate au démarrage.
+## Objectifs TP2
+- Politique de mot de passe stricte (12 caractères, majuscule, chiffre, caractère spécial)
+- Hachage BCrypt des mots de passe
+- Anti brute force (5 échecs → blocage 2 minutes)
+- Route /api/me protégée
+- Qualité logicielle avec SonarCloud
 
 ---
 
-## Compte de test
-- Email : toto@example.com
-- Password : pwd1234
+## Améliorations par rapport au TP1
+| Fonctionnalité | TP1 | TP2 |
+|---------------|-----|-----|
+| Stockage mot de passe | En clair | BCrypt hash |
+| Politique mot de passe | 4 caractères min | 12 car, majuscule, chiffre, spécial |
+| Protection brute force | Aucune | 5 échecs → blocage 2 min |
+| Route /api/me | Non protégée | Protégée par token |
 
 ---
 
-## Endpoints disponibles
-
-| Méthode | URL | Description |
-|---------|-----|-------------|
-| POST | /api/auth/register | Créer un compte |
-| POST | /api/auth/login | Se connecter |
-| GET | /api/me | Voir son profil |
-
-### Exemples avec Postman
-
-**Inscription :**
-```
-POST http://localhost:8080/api/auth/register?email=toto@example.com&password=pwd1234
-```
-
-**Connexion :**
-```
-POST http://localhost:8080/api/auth/login?email=toto@example.com&password=pwd1234
-```
-
-**Profil (avec le token reçu au login) :**
-```
-GET http://localhost:8080/api/me?token=<votre-token>
-```
-
-### Codes HTTP retournés
-
-| Code | Signification |
-|------|--------------|
-| 200 | Succès |
-| 400 | Données invalides (email vide, mot de passe trop court) |
-| 401 | Email ou mot de passe incorrect |
-| 409 | Email déjà utilisé |
+## Faiblesse restante
+Même avec BCrypt, le hash circule dans la requête de login.
+Si un attaquant intercepte la requête, il peut la rejouer.
+Ce problème sera corrigé au TP3 avec une clé secrète partagée et un nonce.
 
 ---
 
@@ -92,43 +76,3 @@ GET http://localhost:8080/api/me?token=<votre-token>
 ```bash
 mvn test
 ```
-
-Les tests utilisent H2 (base de données en mémoire) pour s'isoler de MySQL.
-
----
-
-## Logging
-Les événements d'authentification sont enregistrés dans `logs/auth.log` :
-- Inscription réussie / échouée
-- Connexion réussie / échouée
-- Les mots de passe ne sont jamais loggés
-
----
-
-## Analyse de sécurité TP1
-
-Cette implémentation est volontairement dangereuse. Voici les 5 vulnérabilités
-identifiées :
-
-### Risque 1 : Mot de passe stocké en clair
-Le mot de passe est sauvegardé tel quel dans la base de données, sans aucun
-chiffrement. Si quelqu'un accède à la base, il voit directement tous les mots
-de passe. En production, il faudrait utiliser un algorithme de hachage comme BCrypt.
-
-### Risque 2 : Token sans expiration
-Le token généré après le login n'a pas de durée de vie. Une fois créé, il reste
-valide indéfiniment. Si quelqu'un vole le token, il peut accéder au compte sans
-limite de temps. En production, un token doit expirer après un certain délai.
-
-### Risque 3 : Règles de mot de passe trop faibles
-Seulement 4 caractères minimum, sans obligation de majuscules, chiffres ou
-caractères spéciaux. Un mot de passe court est facile à deviner par force brute.
-
-### Risque 4 : Pas de protection contre la force brute
-Aucune limite sur le nombre de tentatives de connexion. Un attaquant peut
-essayer des milliers de mots de passe sans être bloqué. En production, il
-faudrait verrouiller un compte après plusieurs échecs consécutifs.
-
-### Risque 5 : Communication non chiffrée (HTTP)
-Les données (email, mot de passe, token) transitent en clair sur le réseau.
-N'importe qui peut les intercepter. En production, il faut utiliser HTTPS.
