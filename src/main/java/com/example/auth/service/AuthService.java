@@ -1,6 +1,7 @@
 package com.example.auth.service;
 
 import com.example.auth.entity.User;
+import com.example.auth.exception.AccountLockedException;
 import com.example.auth.exception.AuthenticationFailedException;
 import com.example.auth.exception.InvalidInputException;
 import com.example.auth.exception.ResourceConflictException;
@@ -10,9 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
-import com.example.auth.exception.AccountLockedException;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Service principal gérant la logique d'authentification.
@@ -42,6 +43,18 @@ public class AuthService {
     }
 
     /**
+     * Nettoie une chaîne de caractères pour éviter l'injection dans les logs.
+     * Supprime les retours à la ligne qui pourraient falsifier les entrées de log.
+     *
+     * @param input la chaîne à nettoyer
+     * @return la chaîne sans retours à la ligne
+     */
+    private String sanitize(String input) {
+        if (input == null) return "";
+        return input.replaceAll("[\r\n]", "");
+    }
+
+    /**
      * Inscrit un nouvel utilisateur après validation de la politique de mot de passe.
      * Le mot de passe est haché avec BCrypt avant stockage.
      *
@@ -59,21 +72,21 @@ public class AuthService {
         }
 
         if (!email.contains("@")) {
-            logger.warn("Inscription échouée : format email invalide pour {}", email.replaceAll("[\r\n]", ""));
+            logger.warn("Inscription échouée : format email invalide pour {}", sanitize(email));
             throw new InvalidInputException("Invalid email format");
         }
 
         PasswordPolicyValidator.validate(password);
 
         if (userRepository.findByEmail(email).isPresent()) {
-            logger.warn("Inscription échouée : email déjà existant pour {}", email.replaceAll("[\r\n]", ""));
+            logger.warn("Inscription échouée : email déjà existant pour {}", sanitize(email));
             throw new ResourceConflictException("Email already exists");
         }
 
         String hashedPassword = passwordEncoder.encode(password);
         User user = new User(email, hashedPassword);
         userRepository.save(user);
-        logger.info("Inscription réussie pour : {}", email.replaceAll("[\r\n]", ""));
+        logger.info("Inscription réussie pour : {}", sanitize(email));
         return user;
     }
 
@@ -91,12 +104,12 @@ public class AuthService {
     public String login(String email, String password) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
-                    logger.warn("Connexion échouée : email inconnu {}", email.replaceAll("[\r\n]", ""));
+                    logger.warn("Connexion échouée : email inconnu {}", sanitize(email));
                     return new AuthenticationFailedException("Authentication failed");
                 });
 
         if (user.getLockUntil() != null && user.getLockUntil().isAfter(LocalDateTime.now())) {
-            logger.warn("Connexion échouée : compte bloqué pour {}", email.replaceAll("[\r\n]", ""));
+            logger.warn("Connexion échouée : compte bloqué pour {}", sanitize(email));
             throw new AccountLockedException("Account is locked. Please try again later.");
         }
 
@@ -106,13 +119,13 @@ public class AuthService {
             if (user.getFailedAttempts() >= 5) {
                 user.setLockUntil(LocalDateTime.now().plusMinutes(2));
                 userRepository.save(user);
-                logger.warn("Compte bloqué après 5 échecs pour {}", email.replaceAll("[\r\n]", ""));
+                logger.warn("Compte bloqué après 5 échecs pour {}", sanitize(email));
                 throw new AccountLockedException("Account is locked. Please try again later.");
             }
 
             userRepository.save(user);
             logger.warn("Connexion échouée : mauvais mot de passe pour {} ({}/5)",
-                    email.replaceAll("[\r\n]", ""), user.getFailedAttempts());
+                    sanitize(email), user.getFailedAttempts());
             throw new AuthenticationFailedException("Authentication failed");
         }
 
@@ -121,7 +134,7 @@ public class AuthService {
         String token = UUID.randomUUID().toString();
         user.setToken(token);
         userRepository.save(user);
-        logger.info("Connexion réussie pour : {}", email.replaceAll("[\r\n]", ""));
+        logger.info("Connexion réussie pour : {}", sanitize(email));
         return token;
     }
 
