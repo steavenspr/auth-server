@@ -72,21 +72,27 @@ public class AuthService {
         }
 
         if (!email.contains("@")) {
-            logger.warn("Inscription échouée : format email invalide pour {}", sanitize(email));
+            if (logger.isWarnEnabled()) {
+                logger.warn("Inscription échouée : format email invalide pour {}", sanitize(email));
+            }
             throw new InvalidInputException("Invalid email format");
         }
 
         PasswordPolicyValidator.validate(password);
 
         if (userRepository.findByEmail(email).isPresent()) {
-            logger.warn("Inscription échouée : email déjà existant pour {}", sanitize(email));
+            if (logger.isWarnEnabled()) {
+                logger.warn("Inscription échouée : email déjà existant pour {}", sanitize(email));
+            }
             throw new ResourceConflictException("Email already exists");
         }
 
         String hashedPassword = passwordEncoder.encode(password);
         User user = new User(email, hashedPassword);
         userRepository.save(user);
-        logger.info("Inscription réussie pour : {}", sanitize(email));
+        if (logger.isInfoEnabled()) {
+            logger.info("Inscription réussie pour : {}", sanitize(email));
+        }
         return user;
     }
 
@@ -104,12 +110,16 @@ public class AuthService {
     public String login(String email, String password) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
-                    logger.warn("Connexion échouée : email inconnu {}", sanitize(email));
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Connexion échouée : email inconnu {}", sanitize(email));
+                    }
                     return new AuthenticationFailedException("Authentication failed");
                 });
 
         if (user.getLockUntil() != null && user.getLockUntil().isAfter(LocalDateTime.now())) {
-            logger.warn("Connexion échouée : compte bloqué pour {}", sanitize(email));
+            if (logger.isWarnEnabled()) {
+                logger.warn("Connexion échouée : compte bloqué pour {}", sanitize(email));
+            }
             throw new AccountLockedException("Account is locked. Please try again later.");
         }
 
@@ -119,13 +129,17 @@ public class AuthService {
             if (user.getFailedAttempts() >= 5) {
                 user.setLockUntil(LocalDateTime.now().plusMinutes(2));
                 userRepository.save(user);
-                logger.warn("Compte bloqué après 5 échecs pour {}", sanitize(email));
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Compte bloqué après 5 échecs pour {}", sanitize(email));
+                }
                 throw new AccountLockedException("Account is locked. Please try again later.");
             }
 
             userRepository.save(user);
-            logger.warn("Connexion échouée : mauvais mot de passe pour {} ({}/5)",
-                    sanitize(email), user.getFailedAttempts());
+            if (logger.isWarnEnabled()) {
+                logger.warn("Connexion échouée : mauvais mot de passe pour {} ({}/5)",
+                        sanitize(email), user.getFailedAttempts());
+            }
             throw new AuthenticationFailedException("Authentication failed");
         }
 
@@ -134,7 +148,9 @@ public class AuthService {
         String token = UUID.randomUUID().toString();
         user.setToken(token);
         userRepository.save(user);
-        logger.info("Connexion réussie pour : {}", sanitize(email));
+        if (logger.isInfoEnabled()) {
+            logger.info("Connexion réussie pour : {}", sanitize(email));
+        }
         return token;
     }
 
