@@ -32,3 +32,70 @@
 2026-03-12T22:39:20.825+04:00  INFO 19436 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-03-12T22:39:20.834+04:00  INFO 19436 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
 2026-03-12T22:39:20.842+04:00  INFO 19436 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-03-12T22:45:40.330+04:00  INFO 10028 --- [main] com.example.auth.AuthApplicationTests    : Starting AuthApplicationTests using Java 17.0.17 with PID 10028 (started by steav in C:\Users\steav\IdeaProjects\auth-tp2)
+2026-03-12T22:45:40.336+04:00  INFO 10028 --- [main] com.example.auth.AuthApplicationTests    : No active profile set, falling back to 1 default profile: "default"
+2026-03-12T22:45:41.970+04:00  INFO 10028 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-12T22:45:42.072+04:00  INFO 10028 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 85 ms. Found 1 JPA repository interface.
+2026-03-12T22:45:42.814+04:00  INFO 10028 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-12T22:45:42.923+04:00  INFO 10028 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.42.Final
+2026-03-12T22:45:42.987+04:00  INFO 10028 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-12T22:45:43.692+04:00  INFO 10028 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-12T22:45:43.756+04:00  INFO 10028 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-12T22:45:44.371+04:00  INFO 10028 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@269308cc
+2026-03-12T22:45:44.374+04:00  INFO 10028 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-12T22:45:44.559+04:00  INFO 10028 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 9.1
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-12T22:45:46.036+04:00  INFO 10028 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-12T22:45:46.117+04:00  INFO 10028 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-12T22:45:47.087+04:00  WARN 10028 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-12T22:45:48.423+04:00  INFO 10028 --- [main] com.example.auth.AuthApplicationTests    : Started AuthApplicationTests in 8.65 seconds (process running for 10.476)
+2026-03-12T22:45:49.268+04:00  INFO 10028 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.example.auth.AuthServiceTest]: AuthServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-12T22:45:49.275+04:00  INFO 10028 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.example.auth.AuthApplication for test class com.example.auth.AuthServiceTest
+2026-03-12T22:45:49.590+04:00  WARN 10028 --- [main] com.example.auth.service.AuthService     : Connexion échouée : email inconnu inconnu@example.com
+2026-03-12T22:45:49.645+04:00  WARN 10028 --- [main] com.example.auth.service.AuthService     : Inscription échouée : email vide
+2026-03-12T22:45:49.850+04:00  INFO 10028 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-12T22:45:49.860+04:00  INFO 10028 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-12T22:45:49.880+04:00  INFO 10028 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-03-12T22:46:45.319+04:00  INFO 9704 --- [main] com.example.auth.AuthApplicationTests    : Starting AuthApplicationTests using Java 17.0.17 with PID 9704 (started by steav in C:\Users\steav\IdeaProjects\auth-tp2)
+2026-03-12T22:46:45.321+04:00  INFO 9704 --- [main] com.example.auth.AuthApplicationTests    : No active profile set, falling back to 1 default profile: "default"
+2026-03-12T22:46:46.629+04:00  INFO 9704 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-12T22:46:46.744+04:00  INFO 9704 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 95 ms. Found 1 JPA repository interface.
+2026-03-12T22:46:48.063+04:00  INFO 9704 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-12T22:46:48.136+04:00  INFO 9704 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.42.Final
+2026-03-12T22:46:48.205+04:00  INFO 9704 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-12T22:46:48.716+04:00  INFO 9704 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-12T22:46:48.767+04:00  INFO 9704 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-12T22:46:49.185+04:00  INFO 9704 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@478530cb
+2026-03-12T22:46:49.187+04:00  INFO 9704 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-12T22:46:49.304+04:00  INFO 9704 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 9.1
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-12T22:46:50.229+04:00  INFO 9704 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-12T22:46:50.283+04:00  INFO 9704 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-12T22:46:51.036+04:00  WARN 9704 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-12T22:46:51.776+04:00  INFO 9704 --- [main] com.example.auth.AuthApplicationTests    : Started AuthApplicationTests in 6.967 seconds (process running for 8.511)
+2026-03-12T22:46:52.349+04:00  INFO 9704 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.example.auth.AuthServiceTest]: AuthServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-12T22:46:52.362+04:00  INFO 9704 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.example.auth.AuthApplication for test class com.example.auth.AuthServiceTest
+2026-03-12T22:46:52.916+04:00  INFO 9704 --- [main] com.example.auth.service.AuthService     : Inscription réussie pour : login@example.com
+2026-03-12T22:46:52.936+04:00  INFO 9704 --- [main] com.example.auth.service.AuthService     : Connexion réussie pour : login@example.com
+2026-03-12T22:46:52.966+04:00  WARN 9704 --- [main] com.example.auth.service.AuthService     : Connexion échouée : email inconnu inconnu@example.com
+2026-03-12T22:46:52.983+04:00  INFO 9704 --- [main] com.example.auth.service.AuthService     : Inscription réussie pour : login2@example.com
+2026-03-12T22:46:52.988+04:00  WARN 9704 --- [main] com.example.auth.service.AuthService     : Connexion échouée : mauvais mot de passe pour login2@example.com
+2026-03-12T22:46:53.009+04:00  INFO 9704 --- [main] com.example.auth.service.AuthService     : Inscription réussie pour : double@example.com
+2026-03-12T22:46:53.013+04:00  WARN 9704 --- [main] com.example.auth.service.AuthService     : Inscription échouée : email déjà existant pour double@example.com
+2026-03-12T22:46:53.025+04:00  WARN 9704 --- [main] com.example.auth.service.AuthService     : Inscription échouée : email vide
+2026-03-12T22:46:53.044+04:00  INFO 9704 --- [main] com.example.auth.service.AuthService     : Inscription réussie pour : test@example.com
+2026-03-12T22:46:53.200+04:00  INFO 9704 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-12T22:46:53.204+04:00  INFO 9704 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-12T22:46:53.220+04:00  INFO 9704 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

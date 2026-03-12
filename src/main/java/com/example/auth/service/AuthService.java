@@ -5,6 +5,7 @@ import com.example.auth.exception.AuthenticationFailedException;
 import com.example.auth.exception.InvalidInputException;
 import com.example.auth.exception.ResourceConflictException;
 import com.example.auth.repository.UserRepository;
+import com.example.auth.security.PasswordPolicyValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,8 +14,9 @@ import java.util.UUID;
 /**
  * Service principal gérant la logique d'authentification.
  * <p>
- * Cette implémentation est volontairement dangereuse et ne doit jamais
- * être utilisée en production.
+ * TP2 améliore le stockage mais ne protège pas encore contre le rejeu.
+ * Le hash circule encore dans la phase de login et reste rejouable
+ * si une requête est capturée. Ce problème sera corrigé au TP3.
  * </p>
  */
 @Service
@@ -25,7 +27,7 @@ public class AuthService {
     private final UserRepository userRepository;
 
     /**
-     * Constructeur avec injection du repository.
+     * Constructeur avec injection du repository utilisateur.
      *
      * @param userRepository le repository d'accès aux données utilisateur
      */
@@ -34,13 +36,13 @@ public class AuthService {
     }
 
     /**
-     * Inscrit un nouvel utilisateur avec email et mot de passe.
+     * Inscrit un nouvel utilisateur après validation de la politique de mot de passe.
      *
      * @param email    l'adresse email de l'utilisateur
-     * @param password le mot de passe en clair
+     * @param password le mot de passe en clair (sera haché au TP3)
      * @return l'utilisateur créé et sauvegardé
-     * @throws InvalidInputException      si l'email ou le mot de passe est invalide
-     * @throws ResourceConflictException  si l'email existe déjà
+     * @throws InvalidInputException     si l'email est invalide ou le mot de passe ne respecte pas la politique
+     * @throws ResourceConflictException si l'email existe déjà
      */
     public User register(String email, String password) {
 
@@ -54,10 +56,8 @@ public class AuthService {
             throw new InvalidInputException("Invalid email format");
         }
 
-        if (password.length() < 4) {
-            logger.warn("Inscription échouée : mot de passe trop court pour {}", email);
-            throw new InvalidInputException("Password too short");
-        }
+        // Validation de la politique de mot de passe
+        PasswordPolicyValidator.validate(password);
 
         if (userRepository.findByEmail(email).isPresent()) {
             logger.warn("Inscription échouée : email déjà existant pour {}", email);
