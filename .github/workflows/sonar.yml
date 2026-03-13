@@ -7,6 +7,22 @@ on:
 jobs:
   sonar:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ""
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: auth_db_tp2
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,7 +36,8 @@ jobs:
       - name: Build, test and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify sonar:sonar
-          -Dsonar.projectKey=steavenspr_auth-server-tp2
-          -Dsonar.organization=steavenspr
-          -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          mvn -B verify sonar:sonar \
+            -Dsonar.projectKey=steavenspr_auth-server-tp2 \
+            -Dsonar.organization=steavenspr \
+            -Dsonar.host.url=https://sonarcloud.io
