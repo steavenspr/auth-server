@@ -1,4 +1,4 @@
-# Auth Server - TP1 → TP3
+# Auth Server - TP1 -> TP3
 
 ## Description
 Serveur d'authentification réalisé dans le cadre du cours CDWFS.
