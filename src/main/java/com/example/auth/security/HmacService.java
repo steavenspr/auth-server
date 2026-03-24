@@ -34,7 +34,7 @@ public class HmacService {
             byte[] hmacBytes = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hmacBytes);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur de calcul HMAC", e);
+            throw new IllegalStateException("Erreur de calcul HMAC", e);
         }
     }
 
