@@ -42,6 +42,13 @@ public class AesEncryptionService {
         this.secretKey = new SecretKeySpec(key32, "AES");
     }
 
+    // Exception personnalisée pour le chiffrement AES
+    public static class AesEncryptionException extends RuntimeException {
+        public AesEncryptionException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
     /**
      * Chiffre une chaîne en clair avec AES.
      * L'IV aléatoire est préfixé au résultat chiffré.
@@ -65,7 +72,7 @@ public class AesEncryptionService {
 
             return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur de chiffrement AES", e);
+            throw new AesEncryptionException("Erreur de chiffrement AES", e);
         }
     }
 
@@ -90,7 +97,7 @@ public class AesEncryptionService {
 
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur de déchiffrement AES", e);
+            throw new AesEncryptionException("Erreur de déchiffrement AES", e);
         }
     }
 }
