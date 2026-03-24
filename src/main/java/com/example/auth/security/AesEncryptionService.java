@@ -25,6 +25,7 @@ public class AesEncryptionService {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int IV_SIZE = 12; // GCM recommande 12 octets
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final SecretKeySpec secretKey;
 
@@ -51,7 +52,7 @@ public class AesEncryptionService {
     public String encrypt(String plainText) {
         try {
             byte[] iv = new byte[IV_SIZE];
-            new SecureRandom().nextBytes(iv);
+            SECURE_RANDOM.nextBytes(iv);
             GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128 bits tag
 
             Cipher cipher = Cipher.getInstance(ALGORITHM);
