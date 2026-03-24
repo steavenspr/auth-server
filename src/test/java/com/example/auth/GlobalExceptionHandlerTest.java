@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles; // AJOUTÉ
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +19,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Tests d'intégration du GlobalExceptionHandler via les endpoints HTTP.
- * Vérifie que les exceptions métier sont correctement converties en réponses JSON.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test") // INDISPENSABLE POUR GITHUB ACTIONS
 @Transactional
 class GlobalExceptionHandlerTest {
 
@@ -56,9 +54,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void testRegisterEmailDejaExistantRetourne409() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                .param("email", "conflit@example.com")
-                .param("password", VALID_PASSWORD));
+        authService.register("conflit@example.com", VALID_PASSWORD);
 
         mockMvc.perform(post("/api/auth/register")
                         .param("email", "conflit@example.com")
@@ -86,6 +82,7 @@ class GlobalExceptionHandlerTest {
         String email = "bloque@example.com";
         authService.register(email, VALID_PASSWORD);
 
+        // Simulation de 5 échecs pour déclencher le lockout
         for (int i = 0; i < 5; i++) {
             String nonce = UUID.randomUUID().toString();
             long timestamp = Instant.now().getEpochSecond();
