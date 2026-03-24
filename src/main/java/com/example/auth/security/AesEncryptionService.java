@@ -57,20 +57,20 @@ public class AesEncryptionService {
      */
     public String encrypt(String plainText) {
         try {
-            byte[] iv = new byte[IV_SIZE];
-            SECURE_RANDOM.nextBytes(iv);
+            byte[] iv = generateIv();
             GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128 bits tag
-
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
+            Cipher cipher = createCipher(Cipher.ENCRYPT_MODE, gcmSpec);
             byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
-
             byte[] combined = new byte[IV_SIZE + encrypted.length];
             System.arraycopy(iv, 0, combined, 0, IV_SIZE);
             System.arraycopy(encrypted, 0, combined, IV_SIZE, encrypted.length);
-
             return Base64.getEncoder().encodeToString(combined);
-        } catch (Exception e) {
+        } catch (javax.crypto.NoSuchPaddingException |
+                 java.security.NoSuchAlgorithmException |
+                 java.security.InvalidKeyException |
+                 javax.crypto.IllegalBlockSizeException |
+                 javax.crypto.BadPaddingException |
+                 java.security.InvalidAlgorithmParameterException e) {
             throw new AesEncryptionException("Erreur de chiffrement AES", e);
         }
     }
@@ -84,19 +84,35 @@ public class AesEncryptionService {
     public String decrypt(String encryptedText) {
         try {
             byte[] combined = Base64.getDecoder().decode(encryptedText);
-
             byte[] iv = new byte[IV_SIZE];
             byte[] encrypted = new byte[combined.length - IV_SIZE];
             System.arraycopy(combined, 0, iv, 0, IV_SIZE);
             System.arraycopy(combined, IV_SIZE, encrypted, 0, encrypted.length);
-
             GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv);
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
-
+            Cipher cipher = createCipher(Cipher.DECRYPT_MODE, gcmSpec);
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
-        } catch (Exception e) {
+        } catch (javax.crypto.NoSuchPaddingException |
+                 java.security.NoSuchAlgorithmException |
+                 java.security.InvalidKeyException |
+                 javax.crypto.IllegalBlockSizeException |
+                 javax.crypto.BadPaddingException |
+                 java.security.InvalidAlgorithmParameterException e) {
             throw new AesEncryptionException("Erreur de déchiffrement AES", e);
         }
+    }
+    // Génère un IV aléatoire de la taille requise
+    private byte[] generateIv() {
+        byte[] iv = new byte[IV_SIZE];
+        SECURE_RANDOM.nextBytes(iv);
+        return iv;
+    }
+
+    // Crée et initialise un Cipher pour le mode donné et le paramètre GCM
+    private Cipher createCipher(int mode, GCMParameterSpec gcmSpec)
+            throws javax.crypto.NoSuchPaddingException, java.security.NoSuchAlgorithmException,
+                   java.security.InvalidKeyException, java.security.InvalidAlgorithmParameterException {
+        Cipher cipher = Cipher.getInstance(ALGORITHM);
+        cipher.init(mode, secretKey, gcmSpec);
+        return cipher;
     }
 }
