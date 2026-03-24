@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>auth</artifactId>
+	<artifactId>auth-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>auth</name>
+	<name>auth-server</name>
 	<description>Initialisation en Springboot et TP</description>
 	<url/>
 	<licenses>

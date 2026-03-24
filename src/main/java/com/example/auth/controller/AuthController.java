@@ -2,14 +2,15 @@ package com.example.auth.controller;
 
 import com.example.auth.entity.User;
 import com.example.auth.service.AuthService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.auth.dto.LoginRequest;
+
+import java.util.Map;
 
 /**
- * Contrôleur REST gérant les endpoints d'authentification.
- * <p>
- * Cette implémentation est volontairement dangereuse et ne doit jamais
- * être utilisée en production.
- * </p>
+ * Contrôleur REST gérant les endpoints d'authentification TP3.
+ * Le login accepte désormais une preuve HMAC au lieu d'un mot de passe.
  */
 @RestController
 @RequestMapping("/api")
@@ -41,23 +42,32 @@ public class AuthController {
     }
 
     /**
-     * Authentifie un utilisateur et retourne un token.
+     * Authentifie un utilisateur via le protocole HMAC.
+     * Le mot de passe ne circule plus — seule la preuve HMAC est envoyée.
      *
-     * @param email    l'adresse email de l'utilisateur
-     * @param password le mot de passe en clair
-     * @return message de succès avec le token généré
+     * @param request le payload JSON contenant email, nonce, timestamp, hmac
+     * @return token d'accès et date d'expiration
      */
     @PostMapping("/auth/login")
-    public String login(@RequestParam String email,
-                        @RequestParam String password) {
-        String token = authService.login(email, password);
-        return "Login success. Token: " + token;
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+        String token = authService.login(
+                request.getEmail(),
+                request.getNonce(),
+                request.getTimestamp(),
+                request.getHmac()
+        );
+        User user = authService.getUserByToken(token);
+        return ResponseEntity.ok(Map.of(
+                "accessToken", token,
+                "expiresAt", user.getTokenExpiresAt().toString()
+        ));
     }
 
     /**
      * Retourne les informations de l'utilisateur authentifié.
+     * Le token doit être valide et non expiré.
      *
-     * @param token le token d'authentification
+     * @param token le token d'accès
      * @return message de bienvenue avec l'email de l'utilisateur
      */
     @GetMapping("/me")
