@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -12,7 +13,7 @@ import java.util.Base64;
 
 /**
  * Service de chiffrement AES symétrique.
- * Utilise AES/CBC/PKCS5Padding avec une Server Master Key (SMK).
+ * Utilise AES/GCM/NoPadding avec une Server Master Key (SMK).
  * Le mot de passe est chiffré de façon réversible pour permettre
  * au serveur de recalculer le HMAC lors de l'authentification.
  *
@@ -22,8 +23,8 @@ import java.util.Base64;
 @Service
 public class AesEncryptionService {
 
-    private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
-    private static final int IV_SIZE = 16;
+    private static final String ALGORITHM = "AES/GCM/NoPadding";
+    private static final int IV_SIZE = 12; // GCM recommande 12 octets
 
     private final SecretKeySpec secretKey;
 
@@ -51,10 +52,10 @@ public class AesEncryptionService {
         try {
             byte[] iv = new byte[IV_SIZE];
             new SecureRandom().nextBytes(iv);
-            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128 bits tag
 
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
             byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
 
             byte[] combined = new byte[IV_SIZE + encrypted.length];
@@ -82,9 +83,9 @@ public class AesEncryptionService {
             System.arraycopy(combined, 0, iv, 0, IV_SIZE);
             System.arraycopy(combined, IV_SIZE, encrypted, 0, encrypted.length);
 
-            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv);
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
 
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
         } catch (Exception e) {
