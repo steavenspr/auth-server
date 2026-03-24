@@ -2,7 +2,7 @@ name: SonarCloud Analysis
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/tp3-hmac-authentication ]
 
 jobs:
   sonar:
@@ -12,9 +12,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: ""
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: auth_db_tp2
+          MYSQL_DATABASE: auth_db_tp3
         ports:
           - 3306:3306
         options: >-
@@ -34,11 +33,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Run tests and generate JaCoCo report
+        env:
+          SMK_SECRET: ${{ secrets.SMK_SECRET }} 
         run: mvn -B verify
 
       - name: Analyze with SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SMK_SECRET: ${{ secrets.SMK_SECRET }}
         run: |
           mvn -B sonar:sonar \
             -Dsonar.projectKey=steavenspr_auth-server-tp2 \
