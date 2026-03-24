@@ -131,44 +131,12 @@ public class AuthService {
      * @throws AccountLockedException        si le compte est bloqué
      */
     public String login(String email, String nonce, long timestamp, String hmac) {
+        User user = getUserOrFail(email);
+        checkLockout(user, email);
+        checkTimestampWindow(timestamp, email);
+        checkNonceNotUsed(user, nonce, email);
 
-        // Étape 1 — Vérifier que l'email existe
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("Connexion échouée : email inconnu {}", sanitize(email));
-                    }
-                    return new AuthenticationFailedException("Authentication failed");
-                });
-
-        // Étape 2 — Vérifier le lockout
-        if (user.getLockUntil() != null && user.getLockUntil().isAfter(LocalDateTime.now())) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Connexion échouée : compte bloqué pour {}", sanitize(email));
-            }
-            throw new AccountLockedException("Account is locked. Please try again later.");
-        }
-
-        // Étape 3 — Vérifier la fenêtre timestamp ±60 secondes
-        long now = Instant.now().getEpochSecond();
-        if (Math.abs(now - timestamp) > TIMESTAMP_WINDOW_SECONDS) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Connexion échouée : timestamp hors fenêtre pour {}", sanitize(email));
-            }
-            throw new AuthenticationFailedException("Authentication failed");
-        }
-
-        // Étape 4 — Vérifier que le nonce n'a pas déjà été vu
-        if (nonceRepository.findByUserAndNonce(user, nonce).isPresent()) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Connexion échouée : nonce déjà utilisé pour {}", sanitize(email));
-            }
-            throw new AuthenticationFailedException("Authentication failed");
-        }
-
-        // Étape 5 — Réserver le nonce immédiatement (consumed = false)
-        // On le sauvegarde avant la vérification HMAC pour bloquer
-        // tout rejeu simultané qui arriverait en même temps
+        // Réserver le nonce immédiatement (consumed = false)
         AuthNonce authNonce = new AuthNonce(
                 user, nonce,
                 LocalDateTime.now().plusSeconds(NONCE_TTL_SECONDS)
@@ -176,27 +144,17 @@ public class AuthService {
         authNonce.setConsumed(false);
         nonceRepository.save(authNonce);
 
-        // Étape 6 — Déchiffrer le mot de passe et recalculer le HMAC
+        // Déchiffrer le mot de passe et recalculer le HMAC
         String passwordPlain = aesEncryptionService.decrypt(user.getPasswordEncrypted());
         String message = email + ":" + nonce + ":" + timestamp;
         String expectedHmac = hmacService.compute(passwordPlain, message);
+        handleFailedHmac(user, expectedHmac, hmac);
 
-        if (!hmacService.verifyConstantTime(expectedHmac, hmac)) {
-            user.setFailedAttempts(user.getFailedAttempts() + 1);
-            if (user.getFailedAttempts() >= 5) {
-                user.setLockUntil(LocalDateTime.now().plusMinutes(2));
-                userRepository.save(user);
-                throw new AccountLockedException("Account is locked. Please try again later.");
-            }
-            userRepository.save(user);
-            throw new AuthenticationFailedException("Authentication failed");
-        }
-
-        // Étape 7 — Marquer le nonce comme consommé
+        // Marquer le nonce comme consommé
         authNonce.setConsumed(true);
         nonceRepository.save(authNonce);
 
-        // Étape 8 — Générer le token avec expiration
+        // Générer le token avec expiration
         user.setFailedAttempts(0);
         user.setLockUntil(null);
         String token = UUID.randomUUID().toString();
@@ -208,6 +166,57 @@ public class AuthService {
             logger.info("Connexion réussie pour : {}", sanitize(email));
         }
         return token;
+    }
+
+    private User getUserOrFail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Connexion échouée : email inconnu {}", sanitize(email));
+                    }
+                    return new AuthenticationFailedException("Authentication failed");
+                });
+    }
+
+    private void checkLockout(User user, String email) {
+        if (user.getLockUntil() != null && user.getLockUntil().isAfter(LocalDateTime.now())) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Connexion échouée : compte bloqué pour {}", sanitize(email));
+            }
+            throw new AccountLockedException("Account is locked. Please try again later.");
+        }
+    }
+
+    private void checkTimestampWindow(long timestamp, String email) {
+        long now = Instant.now().getEpochSecond();
+        if (Math.abs(now - timestamp) > TIMESTAMP_WINDOW_SECONDS) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Connexion échouée : timestamp hors fenêtre pour {}", sanitize(email));
+            }
+            throw new AuthenticationFailedException("Authentication failed");
+        }
+    }
+
+    private void checkNonceNotUsed(User user, String nonce, String email) {
+        if (nonceRepository.findByUserAndNonce(user, nonce).isPresent()) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Connexion échouée : nonce déjà utilisé pour {}", sanitize(email));
+            }
+            throw new AuthenticationFailedException("Authentication failed");
+        }
+    }
+
+    private void handleFailedHmac(User user, String expectedHmac, String hmac) {
+        if (!hmacService.verifyConstantTime(expectedHmac, hmac)) {
+            user.setFailedAttempts(user.getFailedAttempts() + 1);
+            if (user.getFailedAttempts() >= 5) {
+                user.setLockUntil(LocalDateTime.now().plusMinutes(2));
+                userRepository.save(user);
+                throw new AccountLockedException("Account is locked. Please try again later.");
+            }
+            userRepository.save(user);
+            throw new AuthenticationFailedException("Authentication failed");
+        }
     }
 
     /**
