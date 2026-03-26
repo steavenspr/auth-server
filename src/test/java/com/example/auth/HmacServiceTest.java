@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles; // AJOUTÉ
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ActiveProfiles("test") // AJOUTÉ
+@ActiveProfiles("test")
 class HmacServiceTest {
 
     @Autowired
