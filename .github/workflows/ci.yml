@@ -39,5 +39,6 @@ jobs:
 
       - name: Analyse de la branche TP4
         if: github.ref == 'refs/heads/feature/tp4-auth-masterkey'
-        run: echo "Analyse spécifique pour la branche TP4 : ${{ github.ref }}"
+        run: |
+          echo "Analyse spécifique pour la branche TP4 : ${{ github.ref }}"
 
