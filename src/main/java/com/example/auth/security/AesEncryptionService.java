@@ -1,6 +1,6 @@
 package com.example.auth.security;
 
-import org.springframework.beans.factory.annotation.Value;
+// ...existing code...
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -29,15 +29,19 @@ public class AesEncryptionService {
     private final SecretKeySpec secretKey;
 
     /**
-     * Constructeur — initialise la clé AES depuis la variable d'environnement SMK_SECRET.
+     * Constructeur — initialise la clé AES depuis la variable d'environnement APP_MASTER_KEY.
      * La clé doit faire exactement 32 caractères (256 bits).
      *
-     * @param smkSecret la clé secrète maître injectée depuis application.properties
+     * @throws IllegalStateException si la clé n'est pas définie ou trop courte
      */
-    public AesEncryptionService(@Value("${smk.secret}") String smkSecret) {
-        byte[] keyBytes = smkSecret.getBytes(StandardCharsets.UTF_8);
+    public AesEncryptionService() {
+        String masterKey = System.getenv("APP_MASTER_KEY");
+        if (masterKey == null || masterKey.length() < 32) {
+            throw new IllegalStateException("La variable d'environnement APP_MASTER_KEY doit être définie et contenir au moins 32 caractères.");
+        }
+        byte[] keyBytes = masterKey.getBytes(StandardCharsets.UTF_8);
         byte[] key32 = new byte[32];
-        System.arraycopy(keyBytes, 0, key32, 0, Math.min(keyBytes.length, 32));
+        System.arraycopy(keyBytes, 0, key32, 0, 32);
         this.secretKey = new SecretKeySpec(key32, "AES");
     }
 
