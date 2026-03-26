@@ -29,19 +29,34 @@ public class AesEncryptionService {
     private final SecretKeySpec secretKey;
 
     /**
-     * Constructeur — initialise la clé AES depuis la variable d'environnement SMK_SECRET.
+     * Constructeur — initialise la clé AES depuis la variable d'environnement APP_MASTER_KEY.
+     * La clé est injectée par Spring via @Value, ce qui permet de la lire depuis :
+     * - La variable d'environnement OS en production
+     * - Le fichier application.properties en test
+     * - Les secrets GitHub Actions en CI
+     *
      * La clé doit faire exactement 32 caractères (256 bits).
      *
-     * @param smkSecret la clé secrète maître injectée depuis application.properties
+     * Limite pédagogique : en production on utiliserait un hash non réversible.
+     *
+     * @param masterKey la clé maître injectée par Spring
+     * @throws IllegalStateException si la clé n'est pas définie ou trop courte
      */
-    public AesEncryptionService(@Value("${smk.secret}") String smkSecret) {
-        byte[] keyBytes = smkSecret.getBytes(StandardCharsets.UTF_8);
+    public AesEncryptionService(@Value("${APP_MASTER_KEY}") String masterKey) {
+        if (masterKey == null || masterKey.length() < 32) {
+            throw new IllegalStateException(
+                    "La variable d'environnement APP_MASTER_KEY doit être définie et contenir au moins 32 caractères."
+            );
+        }
+        byte[] keyBytes = masterKey.getBytes(StandardCharsets.UTF_8);
         byte[] key32 = new byte[32];
-        System.arraycopy(keyBytes, 0, key32, 0, Math.min(keyBytes.length, 32));
+        System.arraycopy(keyBytes, 0, key32, 0, 32);
         this.secretKey = new SecretKeySpec(key32, "AES");
     }
 
-    // Exception personnalisée pour le chiffrement AES
+    /**
+     * Exception personnalisée pour les erreurs de chiffrement AES.
+     */
     public static class AesEncryptionException extends RuntimeException {
         public AesEncryptionException(String message, Throwable cause) {
             super(message, cause);
@@ -52,13 +67,15 @@ public class AesEncryptionService {
      * Chiffre une chaîne en clair avec AES.
      * L'IV aléatoire est préfixé au résultat chiffré.
      *
+     * Limite pédagogique : en production on éviterait le chiffrement réversible.
+     *
      * @param plainText le texte en clair à chiffrer
      * @return Base64(IV + données chiffrées)
      */
     public String encrypt(String plainText) {
         try {
             byte[] iv = generateIv();
-            GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128 bits tag
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv);
             Cipher cipher = createCipher(Cipher.ENCRYPT_MODE, gcmSpec);
             byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
             byte[] combined = new byte[IV_SIZE + encrypted.length];
@@ -100,17 +117,22 @@ public class AesEncryptionService {
             throw new AesEncryptionException("Erreur de déchiffrement AES", e);
         }
     }
-    // Génère un IV aléatoire de la taille requise
+
+    /**
+     * Génère un IV aléatoire de la taille requise.
+     */
     private byte[] generateIv() {
         byte[] iv = new byte[IV_SIZE];
         SECURE_RANDOM.nextBytes(iv);
         return iv;
     }
 
-    // Crée et initialise un Cipher pour le mode donné et le paramètre GCM
+    /**
+     * Crée et initialise un Cipher pour le mode donné et le paramètre GCM.
+     */
     private Cipher createCipher(int mode, GCMParameterSpec gcmSpec)
             throws javax.crypto.NoSuchPaddingException, java.security.NoSuchAlgorithmException,
-                   java.security.InvalidKeyException, java.security.InvalidAlgorithmParameterException {
+            java.security.InvalidKeyException, java.security.InvalidAlgorithmParameterException {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(mode, secretKey, gcmSpec);
         return cipher;
