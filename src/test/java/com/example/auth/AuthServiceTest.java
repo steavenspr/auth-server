@@ -1,5 +1,6 @@
 package com.example.auth;
 
+import com.example.auth.dto.ChangePasswordRequest;
 import com.example.auth.exception.AuthenticationFailedException;
 import com.example.auth.exception.InvalidInputException;
 import com.example.auth.exception.ResourceConflictException;
@@ -227,5 +228,63 @@ class AuthServiceTest {
         // Deuxième connexion avec le même nonce — doit échouer
         assertThrows(AuthenticationFailedException.class, () ->
                 authService.login(email, nonce, timestamp, hmac));
+    }
+
+    @Test
+    void testChangementMotDePasseReussi() {
+        authService.register("change@example.com", VALID_PASSWORD);
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setEmail("change@example.com");
+        request.setOldPassword(VALID_PASSWORD);
+        request.setNewPassword("NouveauMdp1!");
+        request.setConfirmPassword("NouveauMdp1!");
+        assertDoesNotThrow(() -> authService.changePassword(request));
+    }
+
+    @Test
+    void testChangementMotDePasseAncienIncorrect() {
+        authService.register("change2@example.com", VALID_PASSWORD);
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setEmail("change2@example.com");
+        request.setOldPassword("MauvaisAncienMdp1!");
+        request.setNewPassword("NouveauMdp1!");
+        request.setConfirmPassword("NouveauMdp1!");
+        assertThrows(AuthenticationFailedException.class, () ->
+                authService.changePassword(request));
+    }
+
+    @Test
+    void testChangementMotDePasseConfirmationDifferente() {
+        authService.register("change3@example.com", VALID_PASSWORD);
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setEmail("change3@example.com");
+        request.setOldPassword(VALID_PASSWORD);
+        request.setNewPassword("NouveauMdp1!");
+        request.setConfirmPassword("ConfirmDifferente1!");
+        assertThrows(InvalidInputException.class, () ->
+                authService.changePassword(request));
+    }
+
+    @Test
+    void testChangementMotDePasseTropFaible() {
+        authService.register("change4@example.com", VALID_PASSWORD);
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setEmail("change4@example.com");
+        request.setOldPassword(VALID_PASSWORD);
+        request.setNewPassword("faible");
+        request.setConfirmPassword("faible");
+        assertThrows(InvalidInputException.class, () ->
+                authService.changePassword(request));
+    }
+
+    @Test
+    void testChangementMotDePasseUtilisateurInexistant() {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setEmail("inexistant@example.com");
+        request.setOldPassword(VALID_PASSWORD);
+        request.setNewPassword("NouveauMdp1!");
+        request.setConfirmPassword("NouveauMdp1!");
+        assertThrows(AuthenticationFailedException.class, () ->
+                authService.changePassword(request));
     }
 }
