@@ -193,9 +193,14 @@ Cote serveur :
 mvn test
 ```
 
-45 tests JUnit couvrant l'inscription, la connexion HMAC, l'anti-rejeu,
-le lockout apres 5 echecs, et le changement de mot de passe.
+45 tests JUnit repartis sur 6 classes :
 
+- **AuthServiceTest** — inscription, connexion HMAC, anti-rejeu, lockout apres 5 echecs, expiration token, changement de mot de passe
+- **AesEncryptionServiceTest** — chiffrement/dechiffrement AES-GCM, IV aleatoire, detection de modification, refus demarrage si Master Key trop courte
+- **GlobalExceptionHandlerTest** — verification des codes HTTP retournes (400, 401, 409, 423) via MockMvc
+- **HmacServiceTest** — calcul HMAC, comparaison en temps constant, signatures distinctes
+- **PasswordPolicyValidatorTest** — politique de mot de passe (longueur, majuscule, minuscule, chiffre, caractere special, null)
+- **AuthApplicationTests** — chargement du contexte Spring
 ---
 
 ## Limite pedagogique
