@@ -1,26 +1,60 @@
-# Auth Server - TP1 -> TP3
+# Auth Server - TP1 à TP5
 
-## Description
-Serveur d'authentification réalisé dans le cadre du cours CDWFS.
-Ce projet évolue progressivement du TP1 au TP3 en corrigeant les vulnérabilités
-à chaque étape.
+[![CI/CD TP5](https://github.com/steavenspr/auth-server/actions/workflows/ci.yml/badge.svg)](https://github.com/steavenspr/auth-server/actions/workflows/ci.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=steavenspr_auth-server-tp2&metric=alert_status)](https://sonarcloud.io/project/overview?id=steavenspr_auth-server-tp2)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=steavenspr_auth-server-tp2&metric=coverage)](https://sonarcloud.io/project/overview?id=steavenspr_auth-server-tp2)
+![Java](https://img.shields.io/badge/Java-17-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
 
-Stack : Java 17, Spring Boot 3.x, MySQL, Maven
+Serveur d'authentification développé dans le cadre du cours CDWFS.
+Le projet évolue du TP1 au TP5, chaque étape corrigeant les failles de la précédente.
+L'objectif final est qu'un utilisateur puisse prouver qu'il connaît son mot de passe
+sans jamais l'envoyer sur le réseau.
+
+---
+
+## Table des matières
+- [Stack technique](#stack-technique)
+- [Prérequis](#prérequis)
+- [Installation](#installation)
+- [Lancer avec Docker](#lancer-avec-docker)
+- [Endpoints](#endpoints)
+- [Exemples d'utilisation](#exemples-dutilisation)
+- [Protocole HMAC](#protocole-hmac)
+- [Evolution du projet](#evolution-du-projet)
+- [Tests](#tests)
+- [Limite pédagogique](#limite-pédagogique)
+
+---
+
+## Stack technique
+
+- Java 17
+- Spring Boot 3.x
+- MySQL (production) / H2 en mémoire (tests)
+- Maven
+- Docker
+- GitHub Actions (CI/CD)
+- SonarCloud (qualité de code)
 
 ---
 
 ## Prérequis
+
 - Java 17
-- Maven 3.9
-- MySQL (WAMP)
+- Maven 3.9+
+- MySQL
+- Docker Desktop
 
 ---
 
-## Installation et lancement
+## Installation
 
 1. Cloner le projet :
 ```bash
 git clone https://github.com/steavenspr/auth-server.git
+cd auth-server
 ```
 
 2. Créer la base de données MySQL :
@@ -33,13 +67,12 @@ CREATE DATABASE auth_db_tp3;
 spring.datasource.url=jdbc:mysql://localhost:3306/auth_db_tp3
 spring.datasource.username=root
 spring.datasource.password=
-smk.secret=${SMK_SECRET}
 ```
 
-4. Définir la variable d'environnement SMK :
+4. Définir la variable d'environnement Master Key (minimum 32 caractères) :
 ```bash
-# Windows (PowerShell)
-$env:SMK_SECRET="UneCleDe32CaracteresExactement!!"
+# Windows PowerShell
+$env:APP_MASTER_KEY="UneCleDe32CaracteresExactement!!"
 ```
 
 5. Lancer l'application :
@@ -49,78 +82,126 @@ mvn spring-boot:run
 
 ---
 
-## Lancer les tests
+## Lancer avec Docker
 ```bash
-mvn test
+# Construire le jar
+mvn clean package -DskipTests
+
+# Construire l'image
+docker build -t cdwfs-auth-app .
+
+# Lancer le conteneur
+docker run -p 8080:8080 -e APP_MASTER_KEY=UneCleDe32CaracteresExactement!! cdwfs-auth-app
+```
+
+L'application est ensuite accessible sur `http://localhost:8080`
+
+---
+
+## Endpoints
+
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/api/auth/register` | Inscription d'un nouvel utilisateur |
+| POST | `/api/auth/login` | Connexion via protocole HMAC, retourne un token |
+| GET | `/api/me` | Acces a la route protegee par token |
+| PUT | `/api/auth/change-password` | Changement de mot de passe |
+
+---
+
+## Exemples d'utilisation
+
+Inscription :
+```bash
+curl -X POST "http://localhost:8080/api/auth/register" \
+  -d "email=user@example.com&password=Motdepasse1!"
+```
+
+Connexion :
+```bash
+curl -X POST "http://localhost:8080/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "nonce": "uuid-aleatoire",
+    "timestamp": 1711300000,
+    "hmac": "signature-hmac-calculee"
+  }'
+```
+
+Changement de mot de passe :
+```bash
+curl -X PUT "http://localhost:8080/api/auth/change-password" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "oldPassword": "Motdepasse1!",
+    "newPassword": "NouveauMdp1!",
+    "confirmPassword": "NouveauMdp1!"
+  }'
 ```
 
 ---
 
-## Évolution du projet
+## Protocole HMAC
 
-### TP1 — Authentification de base
-- Stockage mot de passe en clair
-- Aucune politique de mot de passe
-- Aucune protection brute force
+Le mot de passe ne circule jamais sur le reseau. Le client prouve qu'il le connait
+en calculant une signature mathematique.
 
-### TP2 — Amélioration du stockage
-- Hachage BCrypt des mots de passe
-- Politique stricte (12 caractères, majuscule, chiffre, caractère spécial)
-- Anti brute force (5 échecs → blocage 2 minutes)
-- Qualité logicielle avec SonarCloud (coverage ≥ 80%)
-- **Faiblesse restante** : le hash circule encore dans la requête → rejeu possible
+Cote client :
+```
+1. Genere un nonce (UUID aleatoire)
+2. Recupere le timestamp actuel en secondes
+3. Construit le message : email + ":" + nonce + ":" + timestamp
+4. Calcule : hmac = HMAC_SHA256(key=password, data=message)
+5. Envoie : email, nonce, timestamp, hmac (le mot de passe ne part pas)
+```
 
-### TP3 — Authentification forte (branche actuelle)
-- Le mot de passe ne circule plus jamais sur le réseau
-- Protocole SSO en un seul échange réseau
-- Chiffrement réversible AES avec Server Master Key (SMK)
-- HMAC-SHA256 comme preuve d'identité
-- Nonce anti-rejeu avec fenêtre de 60 secondes
-- Token d'accès avec expiration (15 minutes)
-
----
-
-## Protocole d'authentification TP3 (HMAC)
-
-### Étape 1 — Le client prépare la preuve
-1. Génère un nonce (UUID aléatoire)
-2. Prend le timestamp actuel (epoch secondes)
-3. Calcule le message : `email + ":" + nonce + ":" + timestamp`
-4. Calcule `hmac = HMAC_SHA256(key=password, data=message)`
-5. Envoie : `email, nonce, timestamp, hmac`
-
-### Étape 2 — Le serveur vérifie
-1. Vérifie que l'email existe → sinon 401
-2. Vérifie que le timestamp est dans ±60 secondes → sinon 401
-3. Vérifie que le nonce n'a pas déjà été utilisé → sinon 401
-4. Déchiffre le mot de passe stocké (AES + SMK)
+Cote serveur :
+```
+1. Verifie que l'email existe
+2. Verifie que le timestamp est dans +/- 60 secondes
+3. Verifie que le nonce n'a pas deja ete utilise
+4. Dechiffre le mot de passe stocke avec la Master Key
 5. Recalcule le hmac attendu
-6. Compare en temps constant → sinon 401
-7. Marque le nonce comme consommé
-8. Retourne `accessToken` + `expiresAt`
+6. Compare les deux hmac en temps constant
+7. Marque le nonce comme consomme
+8. Retourne accessToken + expiresAt
+```
 
 ---
 
-## Limites du chiffrement réversible
-Ce mécanisme est **pédagogique**. En production on éviterait de stocker
-un mot de passe réversible. On préférerait un hash non réversible et adaptatif
-comme BCrypt. Ici on accepte le chiffrement réversible pour simplifier
-l'apprentissage du protocole signé.
+## Evolution du projet
+
+| Fonctionnalite | TP1 | TP2 | TP3 | TP4 | TP5 |
+|----------------|:---:|:---:|:---:|:---:|:---:|
+| Stockage mot de passe | En clair | BCrypt | AES | AES-GCM | AES-GCM |
+| Politique mot de passe | Non | Oui | Oui | Oui | Oui |
+| Protection brute force | Non | Oui | Oui | Oui | Oui |
+| Protocole HMAC | Non | Non | Oui | Oui | Oui |
+| Anti-rejeu | Non | Non | Oui | Oui | Oui |
+| Master Key externe | Non | Non | Non | Oui | Oui |
+| Changement mot de passe | Non | Non | Non | Non | Oui |
+| Docker | Non | Non | Non | Non | Oui |
+| CI/CD GitHub Actions | Non | Non | Non | Oui | Oui |
+| SonarCloud | Non | Oui | Oui | Oui | Oui |
 
 ---
 
-## Tableau comparatif TP1 → TP3
-| Fonctionnalité | TP1 | TP2 | TP3 |
-|----------------|-----|-----|-----|
-| Stockage mot de passe | En clair | BCrypt | AES chiffré (réversible) |
-| Politique mot de passe | 4 car min | 12 car + règles | 12 car + règles |
-| Protection brute force | Aucune | 5 échecs → blocage | 5 échecs → blocage |
-| Protocole login | Password en clair | Password haché | HMAC signé |
-| Anti-rejeu | Non | Non | Nonce + timestamp |
-| Expiration token | Non | Non | 15 minutes |
-| SonarCloud | Non | ≥ 80% | ≥ 80% |
+## Tests
+```bash
+mvn test
+```
+
+45 tests JUnit couvrant l'inscription, la connexion HMAC, l'anti-rejeu,
+le lockout apres 5 echecs, et le changement de mot de passe.
 
 ---
 
-## SonarCloud
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=steavenspr_auth-server-tp2&metric=alert_status)](https://sonarcloud.io/project/overview?id=steavenspr_auth-server-tp2)
+## Limite pedagogique
+
+Ce projet utilise un chiffrement reversible (AES-GCM) pour stocker les mots de passe.
+C'est un choix impose par le protocole HMAC qui necessite de recuperer le mot de passe
+en clair pour recalculer la signature cote serveur.
+En production, on utiliserait un protocole comme SRP ou OPAQUE qui evitent
+de stocker le mot de passe de facon recuperable.
