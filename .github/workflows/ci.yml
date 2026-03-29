@@ -1,8 +1,8 @@
-name: CI/CD TP4
+name: CI/CD TP5
 
 on:
   push:
-    branches: [ main, feature/tp4-auth-masterkey ]
+    branches: [ main, feature/tp4-auth-masterkey, tp5-change-password ]
   pull_request:
     branches: [ main ]
 
@@ -41,3 +41,6 @@ jobs:
         if: github.ref == 'refs/heads/feature/tp4-auth-masterkey'
         run: |
           echo "Analyse spécifique pour la branche TP4 : ${{ github.ref }}"
+
+      - name: Build Docker image
+        run: docker build -t cdwfs-auth-app .
