@@ -11,6 +11,7 @@ import com.example.auth.repository.UserRepository;
 import com.example.auth.security.AesEncryptionService;
 import com.example.auth.security.HmacService;
 import com.example.auth.security.PasswordPolicyValidator;
+import com.example.auth.dto.ChangePasswordRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -236,5 +237,45 @@ public class AuthService {
             throw new AuthenticationFailedException("Token expired");
         }
         return user;
+    }
+
+    /**
+     * Change le mot de passe d'un utilisateur authentifié.
+     * Vérifie l'ancien mot de passe, la confirmation, et la politique de sécurité.
+     *
+     * @param request la requête contenant email, ancien et nouveau mot de passe
+     * @throws AuthenticationFailedException si l'utilisateur est inconnu ou l'ancien mot de passe incorrect
+     * @throws InvalidInputException         si la confirmation ne correspond pas ou le mot de passe est trop faible
+     */
+    public void changePassword(ChangePasswordRequest request) {
+
+        // 1. L'utilisateur existe ?
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    logger.warn("Changement MDP échoué : email inconnu {}", sanitize(request.getEmail()));
+                    return new AuthenticationFailedException("Authentication failed");
+                });
+
+        // 2. L'ancien mot de passe est correct ?
+        String currentPassword = aesEncryptionService.decrypt(user.getPasswordEncrypted());
+        if (!currentPassword.equals(request.getOldPassword())) {
+            logger.warn("Changement MDP échoué : ancien mot de passe incorrect pour {}", sanitize(request.getEmail()));
+            throw new AuthenticationFailedException("Authentication failed");
+        }
+
+        // 3. newPassword et confirmPassword sont identiques ?
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new InvalidInputException("Passwords do not match");
+        }
+
+        // 4. Le nouveau mot de passe respecte la politique ?
+        PasswordPolicyValidator.validate(request.getNewPassword());
+
+        // 5. Chiffrer et sauvegarder
+        String encryptedNewPassword = aesEncryptionService.encrypt(request.getNewPassword());
+        user.setPasswordEncrypted(encryptedNewPassword);
+        userRepository.save(user);
+
+        logger.info("Mot de passe changé avec succès pour : {}", sanitize(request.getEmail()));
     }
 }

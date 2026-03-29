@@ -33,3 +33,4 @@
 ---
 
 Je vais maintenant vérifier chaque point dans le projet et compléter ce tableau.
+

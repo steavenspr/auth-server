@@ -5,6 +5,7 @@ import com.example.auth.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.auth.dto.LoginRequest;
+import com.example.auth.dto.ChangePasswordRequest;
 
 import java.util.Map;
 
@@ -74,5 +75,17 @@ public class AuthController {
     public String me(@RequestParam String token) {
         User user = authService.getUserByToken(token);
         return "Bienvenue " + user.getEmail();
+    }
+
+    /**
+     * Change le mot de passe d'un utilisateur authentifié.
+     *
+     * @param request le payload JSON contenant email, oldPassword, newPassword, confirmPassword
+     * @return message de confirmation
+     */
+    @PutMapping("/auth/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return ResponseEntity.ok("Password changed successfully");
     }
 }
