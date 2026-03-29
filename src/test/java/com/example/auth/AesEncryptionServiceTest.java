@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
+
 class AesEncryptionServiceTest {
 
     @Autowired
@@ -47,5 +48,12 @@ class AesEncryptionServiceTest {
         String tampered = encrypted.substring(0, encrypted.length() - 4) + "XXXX";
         assertThrows(AesEncryptionService.AesEncryptionException.class, () ->
                 aesEncryptionService.decrypt(tampered));
+    }
+
+    @Test
+    void testDemarrageKoSiMasterKeyAbsente() {
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                new AesEncryptionService("courte"));
+        assertTrue(ex.getMessage().contains("APP_MASTER_KEY"));
     }
 }
